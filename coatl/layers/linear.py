@@ -12,6 +12,7 @@ class linear(layer):
         self._out_sz = output_size
 
         self._param = coatl.tensor(shape=(self._in_sz, self._out_sz))
+        self._param._data = np.random.randn(*self._param.shape)
 
     @forward_dec
     def forward(self, x):

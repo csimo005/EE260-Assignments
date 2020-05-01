@@ -6,11 +6,16 @@ scratch implementation to look as similar to pytorch as possible. Hopefully if w
 ## To Do:
 - [x] Fix module importing errors
 - [x] Write Import Tests
-- [ ] Write MLP Tests
+- [x] Write MLP Tests
 - [x] Defualt backwards parameter of 1, i.e. loss.backward()
 - [ ] Implement tensor reshaping
     - [ ] Forward
     - [ ] Backward
-- [ ] log likelihood loss
-    - [ ] Forward
-    - [ ] Backward
+- [x] Logistic loss
+    - [x] Forward
+    - [x] Backward
+- [ ] Add option for regular labels in MNIST
+
+## Known Bug List:
+- MNIST pads batch size that don't perfectly divide len
+- Logistic Loss causes nan, probably a divide by zero error

@@ -16,11 +16,12 @@ class Model(coatl.module):
         self._fc1 = layers.linear(28*28, 100, bias=False)
         self._fc2 = layers.linear(100, 10, bias=False)
         self._activation = layers.sigmoid()
+        self._softmax = layers.softmax()
 
     def forward(self, x):
         x = coatl.tensor(data=np.reshape(x._data, (x.shape[0], 28*28)))
         x = self._activation(self._fc1(x))
-        x = self._fc2(x)
+        x = self._softmax(self._fc2(x), axis=0)
         return x
 
 def train(model, crit, optimizer, trainloader, epoch, fout=None):
@@ -71,9 +72,8 @@ def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
     testloader = coatl.dataloader(testset, batchsize)
 
     model = Model()
-    print(model.get_parameters())
     optimizer = optim.SGD(model.get_parameters(), lr=lr)
-    criterion = loss.MSELoss()
+    criterion = loss.LogisticLoss()
 
     if fname == '':
         fout = None
@@ -84,7 +84,7 @@ def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
     for epoch in range(epochs):
         train(model, criterion, optimizer, trainloader, epoch, fout=fout)
         test(model, criterion, testloader, epoch, fout=fout)
-        if epoch%50 == 49:
+        if epoch%20 == 19:
             optimizer._lr *= 0.1
     t2 = time.time()
     output_str = 'Total Training Time: %.2f seconds' % (t2-t1)
@@ -95,4 +95,4 @@ def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
         fout.close()
 
 if __name__ == '__main__':
-    main(batchsize=100, lr=0.1, epochs=100, fname='mnist_mlp_test.txt')
+    main(batchsize=100, lr=0.5, epochs=100, fname='mnist_mlp_test.txt')
