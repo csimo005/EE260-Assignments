@@ -34,8 +34,12 @@ class dataloader():
             sample = self._dataset[self._indexes[self._n]]
 
             for j in range(self._num_ret):
-                ret[j]._data[i] = sample[j]._data
-
+                if isinstance(sample[j], coatl.tensor):
+                    ret[j]._data[i] = sample[j]._data
+                elif isinstance(sample[j], np.ndarray):
+                    ret[j]._data[i] = sample[j]
+                else:
+                    raise TypeError('Dataset returned unhandled type \'%d\' to dataloader' % str(type(ret[j])))
             self._n += 1
             if self._n == len(self._dataset):
                 break

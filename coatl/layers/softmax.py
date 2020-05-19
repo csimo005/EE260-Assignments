@@ -15,12 +15,15 @@ class softmax(layer):
         ax = np.arange(len(x.shape))
         if axis is not None:
             ax = np.delete(ax, axis)
-        exp = np.exp(x._data)
 
-        z = np.sum(exp, axis=tuple(ax))
         tile_sz = list(x._data.shape)
-        z_sz = [1]*len(tile_sz)
+        z_sz = [1] * len(tile_sz)
         tile_sz[axis], z_sz[axis] = z_sz[axis], tile_sz[axis]
+
+        m = np.max(x._data, axis=tuple(ax))
+        m = np.tile(np.reshape(m, tuple(z_sz)), tuple(tile_sz))
+        exp = np.exp(x._data - m)
+        z = np.sum(exp, axis=tuple(ax))
         z = np.tile(np.reshape(z, tuple(z_sz)), tuple(tile_sz))
 
         ret_tensor = coatl.tensor(data=exp/z)

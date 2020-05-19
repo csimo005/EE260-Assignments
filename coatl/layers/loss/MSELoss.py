@@ -20,5 +20,5 @@ class MSELoss(layer):
         grad = arg0._data-arg1._data
         if self._average:
             grad = grad/arg0.shape[0]
-        grad = grad*ret0._data[0]
+        grad = grad*ret0._grad[0]
         arg0.backward(grad)

@@ -1,34 +1,38 @@
 import os, sys
-sys.path.append(os.path.join(os.getcwd()))
-
+sys.path.append(os.getcwd())
 import numpy as np
 
 import coatl
 from coatl.datasets.mnist_dataset import mnist_dataset
-import coatl.utils
-import coatl.utils.transforms as transform
 import coatl.layers as layers
 import coatl.layers.loss as loss
 import coatl.optimizers as optim
+from coatl.utils import dataloader, transforms
+
+import matplotlib.pyplot as plt
 
 import time
 
 class Model(coatl.module):
     def __init__(self):
-        self._fc1 = layers.linear(28*28, 100, bias=False)
-        self._fc2 = layers.linear(100, 10, bias=False)
-        self._activation = layers.sigmoid()
-        self._softmax = layers.softmax()
+        self._fc = layers.linear(28*28, 2, initializer='Gaussian', std=1./100)
 
     def forward(self, x):
-        x = x.view((-1, 28*28))
-        x = self._activation(self._fc1(x))
-        x = self._softmax(self._fc2(x), axis=0)
+        x = x.view((-1,784))
+        x = self._fc(x)
         return x
 
+def createLabel(label):
+    data = np.zeros((label.shape[0],2))
+    data[np.reshape(label._data,(-1,)) <= 4,0] = 1
+    data[np.reshape(label._data,(-1,)) > 4,1] = 1
+    return coatl.tensor(data=data)
+
 def train(model, crit, optimizer, trainloader, epoch, fout=None):
+    temp = np.zeros((28,28))
     for i, data in enumerate(trainloader):
         img, label = data
+        label = createLabel(label)
 
         optimizer.zero_grad()
         scores = model(img)
@@ -51,6 +55,7 @@ def test(model, crit, testloader, epoch, fout=None):
     forwards = 0.
     for i, data in enumerate(testloader):
         img, label = data
+        label = createLabel(label)
 
         scores = model(img)
         loss = crit(scores, label)
@@ -59,26 +64,34 @@ def test(model, crit, testloader, epoch, fout=None):
         total += img.shape[0]
         forwards += 1
 
-        top_1 += coatl.sum(scores.max(axis=1)[1] == label.max(axis=1)[1])
+        for i in range(img.shape[0]):
+            if np.argmax(scores._data[i,:]) == np.argmax(label._data[i,:]):
+                top_1 += 1
     output_str = 'Testing[%d] test loss: %.3f, accuracy: %.3f' % (epoch, test_loss/forwards, 100*(top_1/total))
     if fout is None:
         print(output_str)
     else:
         fout.write(output_str + '\n')
 
-def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
-    tform = transform.transformation(seq=[transform.ToTensor(),
-                                          transform.Standardize()])
+def main(batchsize=10, lr=0.01, epochs=10, k=5, frac_dset=1., fname=''):
+    tform = transforms.transformation([transforms.ToTensor()])
+    trainset = mnist_dataset(train=True, download=True, frac=frac_dset, oneHot=False, transform=tform)
+    trainset._images = trainset._images/255.
+    mean = np.expand_dims(np.mean(trainset._images, axis=0), 0)
+    std = np.expand_dims(np.std(trainset._images, axis=0), 0)
+    std[std<=0.03] = 1
+    trainset._images = (trainset._images-mean)/std
+    trainloader = dataloader(trainset, batchsize)
 
-    trainset = mnist_dataset(train=True, download=True, frac=frac_dset, transform=tform)
-    trainloader = coatl.utils.dataloader(trainset, batchsize)
 
-    testset = mnist_dataset(train=False, download=True, transform=tform)
-    testloader = coatl.utils.dataloader(testset, batchsize)
+    testset = mnist_dataset(train=False, download=True, oneHot=False, transform=tform)
+    testset._images = testset._images / 255.
+    testset._images = (testset._images - mean) / std
+    testloader = dataloader(testset, batchsize)
 
     model = Model()
     optimizer = optim.SGD(model.get_parameters(), lr=lr)
-    criterion = loss.LogisticLoss()
+    criterion = loss.MSELoss()
 
     if fname == '':
         fout = None
@@ -89,8 +102,6 @@ def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
     for epoch in range(epochs):
         train(model, criterion, optimizer, trainloader, epoch, fout=fout)
         test(model, criterion, testloader, epoch, fout=fout)
-        if epoch%20 == 19:
-            optimizer._lr *= 0.1
     t2 = time.time()
     output_str = 'Total Training Time: %.2f seconds' % (t2-t1)
     if fout is None:
@@ -100,4 +111,4 @@ def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
         fout.close()
 
 if __name__ == '__main__':
-    main(batchsize=1, lr=0.01, epochs=10, fname='mnist_mlp_test.txt')
+    main(batchsize=1, lr=0.001, epochs=5, frac_dset=5./6, fname='linear_baseline.txt')

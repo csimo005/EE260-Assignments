@@ -11,4 +11,4 @@ class SGD():
 
     def zero_grad(self):
         for param in self._parameters:
-            param._grad = np
+            param._grad[:] = np.zeros(param.shape)

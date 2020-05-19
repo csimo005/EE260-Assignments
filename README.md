@@ -15,6 +15,15 @@ scratch implementation to look as similar to pytorch as possible. Hopefully if w
     - [x] Forward
     - [x] Backward
 - [ ] Add option for regular labels in MNIST
+- [ ] Add basic tensor operations
+    - [ ] Element wise Arithmetic
+        - [ ] Addition
+        - [ ] Subtraction
+        - [ ] Multiplication
+        - [ ] Division
+        - [ ] Exponentiation
+    - [ ] Concatenation
+    - [ ] Indexing
 
 ## Known Bug List:
 - MNIST pads batch size that don't perfectly divide len

@@ -38,7 +38,7 @@ def read_idx(fname):
     return data
 
 class mnist_dataset():
-    def __init__(self, train=True, download=True, frac=1.):
+    def __init__(self, train=True, download=True, frac=1., oneHot=True, transform=None):
         if train:
             data_url = 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz'
             label_url = 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'
@@ -62,6 +62,9 @@ class mnist_dataset():
         print('Loading %s labels...' % ('training' if train else 'testing'))
         self._labels = read_idx(label_url[label_url.rfind('/')+1:])
 
+        self._oneHot = oneHot
+        self._tform = transform
+
         shuffle = np.arange(self._images.shape[0])
         np.random.shuffle(shuffle)
         self._images = self._images[shuffle[:int(self._images.shape[0]*frac)]]
@@ -74,9 +77,15 @@ class mnist_dataset():
         if idx >= self._labels.shape[0]:
             raise IndexError('Index %d, greater than dataset size %d' % (idx, self._labels.shape[0]))
 
-        img = coatl.tensor(data=self._images[idx].astype(np.float32)/255.)
-        lbl = np.zeros((10,))
-        lbl[self._labels[idx]] = 1
+        img = self._images[idx]
+        if self._tform is not None:
+            img = self._tform(img)
+
+        if self._oneHot:
+            lbl = np.zeros((10,))
+            lbl[self._labels[idx]] = 1
+        else:
+            lbl = self._labels[idx:idx+1] #index as a range len 1 to ensure lbl is a numpy array
         label = coatl.tensor(data=lbl)
 
         return img, label

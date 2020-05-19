@@ -8,15 +8,17 @@ from coatl.datasets.mnist_dataset import mnist_dataset
 import coatl.layers as layers
 import coatl.layers.loss as loss
 import coatl.optimizers as optim
+from coatl.utils import dataloader
+from coatl.utils import transforms
 
 import time
 
 class Model(coatl.module):
     def __init__(self):
-        self._fc = layers.linear(28*28, 10, bias=False)
+        self._fc = layers.linear(28*28, 10, bias=False, initializer='Zero')
 
     def forward(self, x):
-        x = coatl.tensor(data=np.reshape(x._data, (x.shape[0], 28*28)))
+        x = x.view((-1,28*28))
         x = self._fc(x)
         return x
 
@@ -61,11 +63,13 @@ def test(model, crit, testloader, epoch, fout=None):
         fout.write(output_str + '\n')
 
 def main(batchsize=10, lr=0.01, epochs=10, frac_dset=1., fname=''):
-    trainset = mnist_dataset(train=True, download=True, frac=frac_dset)
-    trainloader = coatl.dataloader(trainset, batchsize)
+    tform = transforms.transformation([transforms.ToTensor(),
+                                       transforms.Standardize()])
+    trainset = mnist_dataset(train=True, download=True, frac=frac_dset, transform=tform)
+    trainloader = dataloader(trainset, batchsize)
 
-    testset = mnist_dataset(train=False, download=True)
-    testloader = coatl.dataloader(testset, batchsize)
+    testset = mnist_dataset(train=False, download=True, transform=tform)
+    testloader = dataloader(testset, batchsize)
 
     model = Model()
     optimizer = optim.SGD(model.get_parameters(), lr=lr)

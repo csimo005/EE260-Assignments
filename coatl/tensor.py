@@ -2,16 +2,16 @@ import numpy as np
 
 class tensor():
     def __init__(self, shape=(), dtype=np.float32, data=None):
-        self._dtype = dtype
-        self.shape = shape
         if data is not None:
             self._data = np.copy(data)
             self.shape = self._data.shape
             self._dtype = self._data.dtype
         else:
             self.shape = shape
+            self._dtype = dtype
             self._data = np.zeros(self.shape, dtype=self._dtype)
 
+        self._view_of = None
         self._require_grad = True
         self._grad = np.zeros(self.shape, dtype=self._dtype)
 
@@ -21,11 +21,14 @@ class tensor():
 
     def backward(self, grad=None):
         if grad is not None:
-            self._grad = grad
+            self._grad[:] = grad
         else:
-            self._grad = np.ones(self.shape)
+            self._grad[:] = np.ones(self.shape)
         if len(self._parents):
-            self._operation.backward(**{self._kwret:self, **self._parents})
+            if self._view_of is None:
+                self._operation.backward(**{self._kwret:self, **self._parents})
+            else:
+                self._operation.backward(**{self._kwret: self._view_of, **self._parents})
 
     @property
     def require_grad(self):
@@ -52,6 +55,14 @@ class tensor():
 
     def sum(self, axis=None):
         return sum(self, axis=axis)
+
+    def view(self, shape):
+        newView = tensor(shape=(1), dtype=self._dtype)
+        newView._data = np.reshape(self._data, shape)
+        newView._grad = np.reshape(self._grad, shape)
+        newView.shape = newView._data.shape
+        newView._view_of = self
+        return newView
 
     def __eq__(self, other):
         return tensor(data=(self._data == other._data))

@@ -3,7 +3,7 @@ import coatl
 from coatl.layers.layer import *
 
 class linear(layer):
-    def __init__(self, input_size, output_size, bias=True):
+    def __init__(self, input_size, output_size, bias=True, initializer='Gaussian', std=None):
         super(layer).__init__()
         self._bias = bias
         self._in_sz = input_size
@@ -13,6 +13,13 @@ class linear(layer):
 
         self._param = coatl.tensor(shape=(self._in_sz, self._out_sz))
         self._param._data = np.random.randn(*self._param.shape)
+
+        if initializer == 'Gaussian':
+            self._gaussian_initializer(std)
+        elif initializer == 'Zero':
+            self._zero_initializer()
+        else:
+            raise ValueError('Unkown initializer: \'%s\'' % initializer)
 
     @forward_dec
     def forward(self, x):
@@ -33,3 +40,14 @@ class linear(layer):
 
     def get_parameters(self):
         return [self._param]
+
+    def _gaussian_initializer(self, std):
+        if std is None:
+            std = 1./self._out_sz
+
+        self._param._data = np.random.normal(0., std, self._param.shape)
+        return
+
+    def _zero_initializer(self):
+        self._param._data = np.zeros(self._param.shape)
+        return

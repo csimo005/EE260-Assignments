@@ -1,6 +1,7 @@
 import os, sys
 import numpy as np
 import coatl
+import time
 
 def forward_dec(func):
     def wrapper(*args, **kwargs):
